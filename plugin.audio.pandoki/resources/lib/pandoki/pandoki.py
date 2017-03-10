@@ -1,4 +1,4 @@
-import collections, re, socket, sys, threading, time, urllib, urllib2
+import collections, re, socket, sys, threading, time, urllib, urllib2, os
 import xbmc, xbmcaddon, xbmcgui, xbmcplugin, xbmcvfs
 import asciidamnit, musicbrainzngs, mypithos
 
@@ -22,11 +22,19 @@ _base	= sys.argv[0]
 _id	= _addon.getAddonInfo('id')
 _stamp	= str(time.time())
 
+# This should probably be a setting item
+_maxdownloads=3
 
 def Log(msg, s = None, level = xbmc.LOGNOTICE):
     if s and s.get('artist'): xbmc.log("%s %s %s '%s - %s'" % (_id, msg, s['token'][-4:], s['artist'], s['title']), level) # song
     elif s:                   xbmc.log("%s %s %s '%s'"      % (_id, msg, s['token'][-4:], s['title']), level)              # station
     else:                     xbmc.log("%s %s"              % (_id, msg), level)
+
+# setup the ability to provide notification to the Kodi GUI
+iconart = xbmc.translatePath(os.path.join('special://home/addons/plugin.audio.pandoki',  'icon.png'))
+
+def notification(title, message, ms, nart):
+    xbmc.executebuiltin("XBMC.notification(" + title + "," + message + "," + ms + "," + nart + ")")
 
 
 def Val(key, val = None):
@@ -38,8 +46,13 @@ def Val(key, val = None):
 
 
 def Prop(key, val = 'get'):
-    if val == 'get': return xbmcgui.Window(10000).getProperty("%s.%s" % (_id, key))
-    else:                   xbmcgui.Window(10000).setProperty("%s.%s" % (_id, key), val)
+    if val == 'get': 
+        retVal = xbmcgui.Window(10000).getProperty("%s.%s" % (_id, key))
+        Log('def Prop %s=%s value=%s' % (key, val, retVal), None, xbmc.LOGDEBUG)
+        return retVal
+    else:
+        Log('def Prop %s=%s ' % (key, val), None, xbmc.LOGDEBUG)
+        xbmcgui.Window(10000).setProperty("%s.%s" % (_id, key), val)
 
 
 
@@ -52,6 +65,7 @@ class Pandoki(object):
         Prop('stamp', _stamp)
 
         self.once	= True
+        self.downloading = 0  # number of files currently being downloaded
         self.abort	= False
         self.mesg	= None
         self.station	= None
@@ -72,6 +86,7 @@ class Pandoki(object):
 
 
     def Proxy(self):
+        Log('def Proxy ', None, xbmc.LOGDEBUG)
         proxy = Val('proxy')
 
         if proxy == '1':	# None
@@ -95,6 +110,7 @@ class Pandoki(object):
 
 
     def Auth(self):
+        Log('def Auth ', None, xbmc.LOGDEBUG)
         p = Val('prof')
         if self.prof != p:
             self.wait['auth'] = 0
@@ -116,6 +132,7 @@ class Pandoki(object):
 
 
     def Login(self):
+        Log('def Login ', None, xbmc.LOGDEBUG)
         if (Val('sni') == 'true') and (not _urllib3):
             if xbmcgui.Dialog().yesno(Val('name'), 'SNI Support not found', 'Please install: pyOpenSSL/ndg-httpsclient/pyasn1', 'Check Settings?'):
                 xbmcaddon.Addon().openSettings()
@@ -130,6 +147,7 @@ class Pandoki(object):
 
 
     def Stations(self):
+        Log('def Stations ', None, xbmc.LOGDEBUG)
         if (self.stations) and (time.time() < self.wait['stations']):
             return self.stations
 
@@ -141,6 +159,7 @@ class Pandoki(object):
 
 
     def Sorted(self):
+        Log('def Sorted ', None, xbmc.LOGDEBUG)
         sort = Val('sort')
         
         stations = list(self.Stations())
@@ -155,6 +174,7 @@ class Pandoki(object):
 
 
     def Dir(self, handle):
+        Log('def Dir ', None, xbmc.LOGDEBUG)
         self.Login()
 
         ic = Val('icon')
@@ -191,6 +211,7 @@ class Pandoki(object):
 
 
     def Search(self, handle, query):
+        Log('def Search %s ' % query, None, xbmc.LOGDEBUG)
         self.Login()
 
         for s in self.pithos.search(query, True):
@@ -205,6 +226,7 @@ class Pandoki(object):
 
 
     def Info(self, s):
+        Log('def Info ', None, xbmc.LOGDEBUG)
         info = { 'artist' : s['artist'], 'album' : s['album'], 'title' : s['title'], 'rating' : s['rating'] }
 
         if s.get('duration'):
@@ -214,9 +236,11 @@ class Pandoki(object):
 
 
     def Add(self, song):
+        Log('def Add ', song, xbmc.LOGDEBUG)
         if song['token'] != 'mesg':
             self.songs[song['token']] = song
 
+        # This line adds the line in the playlist on Kodi GUI
         li = xbmcgui.ListItem(song['artist'], song['title'], song['art'], song['art'])
         li.setProperty("%s.token" % _id, song['token'])
         li.setInfo('music', self.Info(song))
@@ -224,6 +248,7 @@ class Pandoki(object):
         if song.get('encoding') == 'm4a': li.setProperty('mimetype', 'audio/aac')
         if song.get('encoding') == 'mp3': li.setProperty('mimetype', 'audio/mpeg')
 
+        Log('def Add  adding %s' % song['path'], song, xbmc.LOGDEBUG)
         self.playlist.add(song['path'], li)
         self.Scan(False)
 
@@ -231,14 +256,18 @@ class Pandoki(object):
 
     
     def Queue(self, song):
+        Log('def Queue ', song, xbmc.LOGDEBUG)
         self.queue.append(song)
 
 
     def Msg(self, msg):
+        Log('def Msg %s ' % msg, None, xbmc.LOGDEBUG)
         if self.mesg == msg: return
         else: self.mesg = msg
-
-        song = { 'token' : 'mesg', 'title' : msg, 'path' : self.silent, 'artist' : Val('name'),  'album' : Val('description'), 'art' : Val('icon'), 'rating' : '' }
+        
+        # added ready (true if file is ready to play and starttime to know how 
+        # long it has been taking to download file
+        song = { 'starttime' : time.time(), 'ready' : False, 'token' : 'mesg', 'title' : msg, 'path' : self.silent, 'artist' : Val('name'),  'album' : Val('description'), 'art' : Val('icon'), 'rating' : '' }
         self.Queue(song)
 
 #        while True:		# Remove old messages
@@ -259,6 +288,7 @@ class Pandoki(object):
 
 
     def M3U(self, song, delete = False):
+        Log('def M3U ', song, xbmc.LOGDEBUG)
         if (Val('m3u') != 'true'): return
         if (not song.get('saved', False)): return
 
@@ -284,6 +314,7 @@ class Pandoki(object):
 
 
     def Tag(self, song):
+        Log('def Tag ', song, xbmc.LOGDEBUG)
         try:
             res = musicbrainzngs.search_recordings(limit = 1, query = song['title'], artist = song['artist'], release = song['album'], qdur = str(song['duration'] * 1000))['recording-list'][0]
             song['number'] = int(res['release-list'][0]['medium-list'][1]['track-list'][0]['number'])
@@ -299,6 +330,7 @@ class Pandoki(object):
 
 
     def Save(self, song):
+        Log('def Save ', song, xbmc.LOGDEBUG)
         if (song['title'] == 'Advertisement') or (song.get('saved')) or (not song.get('cached', False)): return
         if (Val('mode') in ('0', '3')) or ((Val('mode') == '2') and (song.get('voted') != 'up')): return
         if (not self.Tag(song)): return
@@ -353,6 +385,7 @@ class Pandoki(object):
 
 
     def Hook(self, song, size, totl):
+        Log('def Hook ', song, xbmc.LOGDEBUG)
         if totl in (341980, 340554, 173310):	# empty song cause requesting to fast
             self.Msg('Too Many Songs Requested')
             Log('Cache MT', song)
@@ -370,7 +403,8 @@ class Pandoki(object):
                 song['qued'] = True
                 self.Msg('Skipping Advertisements')
 
-        if (not song.get('qued')) and (size >= (song['bitrate'] / 8 * 1024 * int(Val('delay')))):
+        Log('Cache QU: ready=%s size=%8d bitrate:%8d' % (song.get('ready'), size, song['bitrate']), song, xbmc.LOGDEBUG)
+        if song.get('ready',False) and (not song.get('qued')) and (size >= (song['bitrate'] / 8 * 1024 * int(Val('delay')))):
             song['qued'] = True
             self.Queue(song)
 
@@ -378,6 +412,7 @@ class Pandoki(object):
 
 
     def Cache(self, song):
+        Log('def Cache ', song, xbmc.LOGDEBUG)
         try:
             strm = self.Proxy().open(song['url'], timeout = 10)
         except: # HTTPError:
@@ -390,28 +425,43 @@ class Pandoki(object):
         totl = int(strm.headers['Content-Length'])
         size = 0
 
-        Log("%8d" % totl, song)
+        Log("Expecting %8d bytes " % totl, song)
 
         cont = self.Hook(song, size, totl)
         if not cont: return
 
         file = xbmcvfs.File(song['path_cch'], 'wb')
-
+        self.downloading = self.downloading + 1
+        song['starttime'] = time.time()
+        lastnotify = time.time()
+        notification('Caching', '[COLOR lime]' + song['title'] + ' [/COLOR]' , '3000', iconart)
         while (cont) and (size < totl) and (not xbmc.abortRequested) and (not self.abort):
+            Log("Downloading %8d bytes, currently %8d bytes " % (totl, size), song, xbmc.LOGDEBUG)
             try: data = strm.read(min(8192, totl - size))
             except socket.timeout:
-                Log('Cache TO', song)
+                Log('Socket Timeout: Bytes Received %8d: Cache TO' % size, song)
+                song['ready'] = True
                 break
 
             file.write(data)
             size += len(data)
+
+            if ( lastnotify + 60 < time.time() ):
+                lastnotify = time.time()
+                notification('Slow Network', '[COLOR lime] %d' % (size * 100 / totl ) + '% ' + song['title'] + ' [/COLOR]' , '5000', iconart)
+		
+
+            if ( size >= totl ): 
+                Log('Setting song to ready ', song, xbmc.LOGDEBUG)
+                song['ready'] = True
             cont = self.Hook(song, size, totl)
 
         file.close()
         strm.close()
+        self.downloading = self.downloading - 1
 
         if (not cont) or (size != totl):
-            xbmc.sleep(3000)
+            #xbmc.sleep(3000)
             xbmcvfs.delete(song['path_cch'])
             Log('Cache RM', song)
 
@@ -419,10 +469,11 @@ class Pandoki(object):
             song['cached'] = True
             self.Save(song)
 
-        Log('Cache OK', song)
+        Log('Cache Download Complete, Still Downloading:%d' % self.downloading, song)
 
 
     def Fetch(self, song):
+        Log('def Fetch ', song, xbmc.LOGDEBUG)
         if xbmcvfs.exists(song['path_mp3']):	# Found MP3 in Library
             Log('Song MP3', song)
             song['path_lib'] = song['path_mp3']
@@ -454,6 +505,7 @@ class Pandoki(object):
 
 
     def Seed(self, song):
+        Log('def Seed ', None, xbmc.LOGDEBUG)
         if not self.Stations(): return
         result = self.pithos.search("%s by %s" % (song['title'], song['artist']))[0]
 
@@ -464,6 +516,7 @@ class Pandoki(object):
 
 
     def Branch(self, song):
+        Log('def Branch ', None, xbmc.LOGDEBUG)
         if not self.Stations(): return
         station = self.pithos.branch_station(song['token'])
 
@@ -479,6 +532,7 @@ class Pandoki(object):
 
 
     def Rate(self, mode):
+        Log('def Rate ', None, xbmc.LOGDEBUG)
         pos  = self.playlist.getposition()
         item = self.playlist[pos]
         tokn = item.getProperty("%s.token" % _id)
@@ -564,6 +618,7 @@ class Pandoki(object):
 
 
     def Scan(self, rate = False):
+        Log('def Scan ', None, xbmc.LOGDEBUG)
         if ((rate) and (time.time() < self.wait['scan'])) or (xbmcgui.getCurrentWindowDialogId() == 10135): return
         self.wait['scan'] = time.time() + 15
 
@@ -592,6 +647,7 @@ class Pandoki(object):
 
 
     def Path(self, s):
+        Log('def Path ', None, xbmc.LOGDEBUG)
         lib  = Val('library')
         badc = '\\/?%*:|"<>.'		# remove bad filename chars
 
@@ -613,6 +669,7 @@ class Pandoki(object):
 
 
     def Fill(self):
+        Log('def Fill ', None, xbmc.LOGDEBUG)
         token = self.station['token']
         if len(self.ahead.get(token, '')) > 0: return
 
@@ -638,7 +695,9 @@ class Pandoki(object):
 
 
     def Next(self):
-        if time.time() < self.wait['next']: return
+        Log('def Next %s %s' % (time.time(), self.wait['next']), None, xbmc.LOGDEBUG)
+        # keeps the number of downloads clamped to _maxdownloads
+        if time.time() < self.wait['next'] or self.downloading >= _maxdownloads: return
         self.wait['next'] = time.time() + float(Val('delay')) + 1
 
         self.Fill()
@@ -650,9 +709,10 @@ class Pandoki(object):
 
 
     def List(self):
+        Log('def List ', None, xbmc.LOGDEBUG)
         if (not self.station) or (not self.player.isPlayingAudio()): return
 
-        len  = self.playlist.size()
+        len1  = self.playlist.size()
         pos  = self.playlist.getposition()
         item = self.playlist[pos]
         tokn = item.getProperty("%s.token" % _id)
@@ -662,11 +722,12 @@ class Pandoki(object):
 
 #        skip = xbmc.getInfoLabel("MusicPlayer.Position(%d).Rating" % pos)
 #        skip = ((tokn == 'mesg') or (skip == '1') or (skip == '2')) and (xbmcgui.getCurrentWindowDialogId() != 10135)
-
-        if (len - pos) < 2:
+        
+        # keep adding until number of max downloads is in list not played
+        if ((len1 - pos) < 2) or ((len1 - pos + self.downloading) < (_maxdownloads + 1)):
             self.Next()
 
-#        elif ((len - pos) < 2) and (tokn != 'mesg'):
+#        elif ((len1 - pos) < _maxdownloads) and (tokn != 'mesg'):
 #            self.Msg("Queueing %s" % self.station['title'])
 
 #        elif skip:
@@ -675,6 +736,7 @@ class Pandoki(object):
 
 
     def Deque(self):
+        Log('def Deque %2d' % len(self.queue), None, xbmc.LOGDEBUG)
         if len(self.queue) == 0: return
         elif self.once:
             self.playlist.clear()
@@ -686,7 +748,9 @@ class Pandoki(object):
             self.M3U(song)
 
         if self.once:
+            # this will start the  playlist playing
             self.player.play(self.playlist)
+            Log('def Deque setting once to False', None, xbmc.LOGDEBUG)
             self.once = False 
 
         max = int(Val('history'))
@@ -698,6 +762,7 @@ class Pandoki(object):
 
 
     def Tune(self, token):
+        Log('def Tune %s' % token, None, xbmc.LOGDEBUG)
         for s in self.Stations():
             if (token == s['token']) or (token == s['token'][-4:]):
                 if self.station == s: return False
@@ -766,6 +831,7 @@ class Pandoki(object):
 
     def Action(self):
         act = Prop('action')
+        Log('def Action action=%s' % act, None, level = xbmc.LOGDEBUG)
 
         if _stamp != Prop('stamp'):
             self.abort = True
@@ -806,6 +872,7 @@ class Pandoki(object):
 
 
     def Flush(self):
+        Log('def Flush', None, level = xbmc.LOGDEBUG)
         cch = xbmc.translatePath(Val('cache')).decode("utf-8")
         reg = re.compile('^.*\.(m4a|mp3)')
 
@@ -818,15 +885,17 @@ class Pandoki(object):
 
 
     def Loop(self):
+        Log('def Loop', None, level = xbmc.LOGDEBUG)
         while (not xbmc.abortRequested) and (not self.abort) and (self.once or self.player.isPlayingAudio()):
             time.sleep(0.01)
-            xbmc.sleep(1000)
+            xbmc.sleep(5000)
 
             self.Action()
             self.Deque()
             self.List()
             self.Scan()
-
-        Log('Exit  OK', level = xbmc.LOGNOTICE)
+        if (self.player.isPlayingAudio()):
+            notification('Exiting', '[COLOR lime]No longer queuing new songs[/COLOR]' , '5000', iconart)
+        Log('Pankodi Exiting XBMCAbort?=%s PandokiAbort?=%s ' % (xbmc.abortRequested, self.abort), None, level = xbmc.LOGNOTICE)
         Prop('run', '0')
 
