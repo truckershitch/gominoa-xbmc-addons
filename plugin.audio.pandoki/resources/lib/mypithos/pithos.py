@@ -25,6 +25,10 @@ import urllib
 import urllib2
 #import ssl
 
+
+# uncomment to write a pithos.log file
+#logging.basicConfig(filename='~/.kodi/temp/pithos.log',level=logging.DEBUG)
+
 #ssl._create_default_https_context = ssl._create_unverified_context
 
 # This is an implementation of the Pandora JSON API using Android partner
@@ -228,7 +232,7 @@ class Pithos(object):
 
         for s in self.json_call('user.getStationList', { 'includeStationArtUrl' : True })['stations']:
             self.stations.append({ 'id' : s['stationId'], 'token' : s['stationToken'], 'title' : s['stationName'], 'art' : s.get('artUrl') })
-
+        logging.info('get_stations JSON: %s' % s)
         return self.stations
 
 
@@ -236,13 +240,20 @@ class Pithos(object):
         quality = [ 'lowQuality', 'mediumQuality', 'highQuality' ]
         self.playlist = []
 
-        for s in self.json_call('station.getPlaylist', { 'stationToken': token, 'includeTrackLength' : True }, https = True)['items']:
+        for s in self.json_call('station.getPlaylist', { 
+                     'stationToken': token, 
+                     'includeTrackLength' : True, 
+                     'additionalAudioUrl': 'HTTP_32_AACPLUS,HTTP_128_MP3'
+                      }, https = True)['items']:
             if s.get('adToken'): continue
 
             song = { 'id' : s['songIdentity'], 'token' : s['trackToken'], 'station' : s['stationId'], 'duration' : s.get('trackLength'),
                  'artist' : s['artistName'],   'album' : s['albumName'],    'title' : s['songName'],       'art' : s['albumArtUrl'],
                  'url' : None, 'bitrate' : 64, 'encoding' : None, 'rating' : '0' }
 
+            logging.info('get_playlist JSON: %s' % s)
+            logging.debug("####### audioUrlMap=%s additionalAudioUrl=%s" % (s['audioUrlMap'], s.get('additionalAudioUrl')))
+            
             while q < 3:
                 if s['audioUrlMap'].get(quality[q]):
                     song['url']      =     s['audioUrlMap'][quality[q]]['audioUrl']
@@ -251,11 +262,24 @@ class Pithos(object):
                     break
                 q += 1
 
+            # determine if we can use 128K bit rate
+            if (q == 2) and (len(s.get('additionalAudioUrl', [])) == 2):
+                if int(song['bitrate']) < 128:
+                    # We can use the higher quality mp3 stream for non-one users
+                    song['encoding'] = 'mp3'
+                    song['bitrate'] = 128
+                    song['url'] = s['additionalAudioUrl'][1]
+
             if s['songRating'] != 0:
                 song['rating'] = '3'
                 song['voted'] = 'up'
 
-            if song['encoding'] == 'aacplus': song['encoding'] = 'm4a'
+            #if song['encoding'] == 'aacplus': 
+            #   song['encoding'] = 'm4a'
+            #   song['bitrate']  = 64
+            #if song['encoding'] == 'mp3-hifi': 
+            #   song['encoding'] = 'mp3'
+            #   song['bitrate']  = 128
 
             self.playlist.append(song)
 
