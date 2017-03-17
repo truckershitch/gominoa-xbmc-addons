@@ -423,6 +423,7 @@ class Pandoki(object):
 
         totl = int(strm.headers['Content-Length'])
         size = 0
+        lastsize = -1
 
         Log("Expecting %8d bytes " % totl, song)
 
