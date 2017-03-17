@@ -61,8 +61,8 @@
 
 <addon id="plugin.audio.pandoki"
 	name="Pandoki"
-	version="0.9.3"
-	provider-name="gominoa">
+	version="0.9.3a"
+	provider-name="gominoa, rocky4546">
 	<requires>
 		<import addon="xbmc.python" version="2.1.0"/>
 		<import addon="script.module.mutagen" version="1.22.0"/>
@@ -80,7 +80,7 @@
 		<forum>http://forum.xbmc.org/showthread.php?tid=205547</forum>
 		<website></website>
 		<email></email>
-		<source>https://github.com/gominoa/gominoa-xbmc-addons</source>
+		<source>https://github.com/rocky4546/gominoa-xbmc-addons</source>
 	</extension>
 </addon>
 </addons>
