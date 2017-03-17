@@ -444,10 +444,16 @@ class Pandoki(object):
 
             file.write(data)
             size += len(data)
-
+            
             if ( lastnotify + 60 < time.time() ):
+                if (size == lastsize):
+                    Log('Aborting Song, Song Stopped Buffering: %d out of %d downloaded' % (size, totl), song)
+                    notification('Song Stopped Buffering' '[COLOR lime] %d' % (size * 100 / totl ) + '% ' + song['title'] + ' [/COLOR]' , '5000', iconart)
+                    break
+                    
                 lastnotify = time.time()
-                notification('Slow Network', '[COLOR lime] %d' % (size * 100 / totl ) + '% ' + song['title'] + ' [/COLOR]' , '5000', iconart)
+                lastsize = size
+                notification('Song Buffering', '[COLOR lime] %d' % (size * 100 / totl ) + '% ' + song['title'] + ' [/COLOR]' , '5000', iconart)
 		
 
             if ( size >= totl ): 
