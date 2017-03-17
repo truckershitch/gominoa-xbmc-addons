@@ -22,8 +22,6 @@ _base	= sys.argv[0]
 _id	= _addon.getAddonInfo('id')
 _stamp	= str(time.time())
 
-# This should probably be a setting item
-_maxdownloads=3
 
 def Log(msg, s = None, level = xbmc.LOGNOTICE):
     if s and s.get('artist'): xbmc.log("%s %s %s '%s - %s'" % (_id, msg, s['token'][-4:], s['artist'], s['title']), level) # song
@@ -55,6 +53,7 @@ def Prop(key, val = 'get'):
         xbmcgui.Window(10000).setProperty("%s.%s" % (_id, key), val)
 
 
+_maxdownloads=Val('maxdownload')
 
 class Pandoki(object):
     def __init__(self):
@@ -724,14 +723,11 @@ class Pandoki(object):
 #        skip = ((tokn == 'mesg') or (skip == '1') or (skip == '2')) and (xbmcgui.getCurrentWindowDialogId() != 10135)
         
         # keep adding until number of max downloads is in list not played
+     
         if ((len1 - pos) < 2) or ((len1 - pos + self.downloading) < (_maxdownloads + 1)):
             self.Next()
 
-#        elif ((len1 - pos) < _maxdownloads) and (tokn != 'mesg'):
-#            self.Msg("Queueing %s" % self.station['title'])
-
-#        elif skip:
-        elif (tokn == 'mesg'):
+        if ((len1 - pos) > 1) and (tokn == 'mesg'):
             self.player.playnext()
 
 
