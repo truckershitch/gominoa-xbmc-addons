@@ -53,7 +53,7 @@ def Prop(key, val = 'get'):
         xbmcgui.Window(10000).setProperty("%s.%s" % (_id, key), val)
 
 
-_maxdownloads=Val('maxdownload')
+_maxdownloads=int(Val('maxdownload'))
 
 class Pandoki(object):
     def __init__(self):
