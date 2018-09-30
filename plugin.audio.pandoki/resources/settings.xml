@@ -24,8 +24,8 @@
 		<setting id="sort"       type="enum"   label="Sort Stations"    default="0"     values="Newest|A-Z|Oldest"/>
 		<setting id="quality"    type="enum"   label="Audio Quality"    default="2"     values="Low|Medium|High"/>
 		<setting id="rating"     type="enum"   label="Rating Mode"      default="0"     values="Basic|Expert"/>
-		<setting id="mode"       type="enum"   label="Track Handling"   default="0"     values="Stream Only|Save All Tracks|Save Liked Tracks|Cache Only"/>
-		<setting id="maxdownload" type="slider"   label="Concurrent Downloads" default="3" range="1,1,6" option="int" visible="!eq(-1,0)"/>
+		<setting id="mode"       type="enum"   label="Track Handling"   default="0"     values="Stream Only|Cache Only"/>
+		<setting id="maxdownload" type="slider"   label="Concurrent Downloads" default="2" range="1,1,5" option="int" visible="!eq(-1,0)"/>
 		<setting id="m3u"        type="bool"   label="Save Playlist"    default="false" visible="!eq(-1,0)"/>
 		<setting id="skip"       type="bool"   label="Skip Ads"         default="false" visible="!eq(-2,0)"/>
 	</category>
@@ -35,7 +35,6 @@
 		<setting id="delay"      type="slider" label="Track Prefetch"   default="7"     range="1,1,30"     option="int"/>
 	</category>
 	<category                                      label="Folders">
-		<setting id="library"    type="folder" label="Library"          default="special://userdata/addon_data/plugin.audio.pandoki/Pandoki"/>
 		<setting id="cache"      type="folder" label="Cache"            default="special://userdata/addon_data/plugin.audio.pandoki/Cache"/>
 	</category>
 </settings>
