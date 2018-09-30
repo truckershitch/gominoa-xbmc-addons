@@ -331,7 +331,8 @@ class Pandoki(object):
     def Save(self, song):
         Log('def Save ', song, xbmc.LOGDEBUG)
         if (song['title'] == 'Advertisement') or (song.get('saved')) or (not song.get('cached', False)): return
-        if (Val('mode') in ('0', '3')) or ((Val('mode') == '2') and (song.get('voted') != 'up')): return
+        if (Val('mode') in ('0', '1')) or ((Val('mode') == '3') and (song.get('voted') != 'up')): return
+	return
         if (not self.Tag(song)): return
 
         tmp = "%s.%s" % (song['path'], song['encoding'])
