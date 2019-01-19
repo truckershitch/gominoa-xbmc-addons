@@ -899,7 +899,7 @@ class Pandoki(object):
             self.List()
             self.Scan()
             
-            for i in range(10):
+            for i in range(20):
                 if not (self.once or self.player.isPlayingAudio()):
                     xbmc.sleep(100)
                 else:
