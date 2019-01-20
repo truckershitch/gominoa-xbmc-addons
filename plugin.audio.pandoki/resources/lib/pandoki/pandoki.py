@@ -898,6 +898,13 @@ class Pandoki(object):
             self.Deque()
             self.List()
             self.Scan()
+            
+            for i in range(20):
+                if not (self.once or self.player.isPlayingAudio()):
+                    xbmc.sleep(100)
+                else:
+                    break
+                
         if (self.player.isPlayingAudio()):
             notification('Exiting', '[COLOR lime]No longer queuing new songs[/COLOR]' , '5000', iconart)
         Log('Pankodi Exiting XBMCAbort?=%s PandokiAbort?=%s ' % (xbmc.abortRequested, self.abort), None, level = xbmc.LOGNOTICE)
