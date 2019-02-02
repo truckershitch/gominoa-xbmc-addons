@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="repository.rocky4546" name="rocky4546's XBMC Addons" version="0.2.0" provider-name="gominoa, rocky4546">
-	<extension point="xbmc.addon.repository" name="rocky4546's XBMC Addon Repository">
-		<info compressed="false">https://raw.github.com/rocky4546/gominoa-xbmc-addons/master/addons.xml</info>
-		<checksum>https://raw.github.com/rocky4546/gominoa-xbmc-addons/master/addons.xml.md5</checksum>
-		<datadir zip="true">https://raw.github.com/rocky4546/gominoa-xbmc-addons/master/repo</datadir>
+<addon id="repository.rocky4546" name="RC - rocky4546's XBMC Addons" version="0.2.0" provider-name="gominoa, rocky4546">
+	<extension point="xbmc.addon.repository" name="RC - rocky4546's XBMC Addon Repository">
+		<info compressed="false">https://raw.github.com/rocky4546/gominoa-xbmc-addons/tree/Kodi18.0/addons.xml</info>
+		<checksum>https://raw.github.com/rocky4546/gominoa-xbmc-addons/tree/Kodi18.0/addons.xml.md5</checksum>
+		<datadir zip="true">https://raw.github.com/rocky4546/gominoa-xbmc-addons/tree/Kodi18.0/repo</datadir>
 	</extension>
 	<extension point="xbmc.addon.metadata">
-		<summary lang="en">Install gominoa's, rocky4546 Addons</summary>
+		<summary lang="en">Release Candidate Area - Install gominoa's, rocky4546 Addons</summary>
 		<description lang="en">Download and install addons by gominoa, rocky4546</description>
 		<platform>all</platform>
 	</extension>
