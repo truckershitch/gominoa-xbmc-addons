@@ -892,7 +892,7 @@ class Pandoki(object):
         Log('def Loop', None, level = xbmc.LOGDEBUG)
         while (not xbmc.abortRequested) and (not self.abort) and (self.once or self.player.isPlayingAudio()):
             time.sleep(0.01)
-            xbmc.sleep(5000)
+            xbmc.sleep(3000)
 
             self.Action()
             self.Deque()
@@ -901,7 +901,7 @@ class Pandoki(object):
             
             for i in range(20):
                 if not (self.once or self.player.isPlayingAudio()):
-                    xbmc.sleep(100)
+                    xbmc.sleep(200)
                 else:
                     break
                 
