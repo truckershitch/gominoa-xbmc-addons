@@ -11,11 +11,6 @@ except ImportError:
     _urllib3 = False
     pass
 
-from mutagen.mp3 import MP3
-from mutagen.easyid3 import EasyID3
-from mutagen.easymp4 import EasyMP4
-
-
 
 _addon	= xbmcaddon.Addon()
 _base	= sys.argv[0]
@@ -285,33 +280,6 @@ class Pandoki(object):
 #            if not item:
 #                break
 
-
-    def M3U(self, song, delete = False):
-        Log('def M3U ', song, xbmc.LOGDEBUG)
-        if (Val('m3u') != 'true'): return
-        if (not song.get('saved', False)): return
-
-        m3u = xbmcvfs.File(song['path_m3u'], 'r')
-        lines = m3u.read().splitlines()
-        m3u.close()
-
-        if (song['path_rel'] in lines):
-            if (not delete): return
-            
-            lines.remove(song['path_rel'])
-            
-        else:
-            if (not xbmcvfs.exists(song['path_lib'])): return
-
-            lines.append(song['path_rel'])
-
-        lines = '\n'.join(lines)
-
-        m3u = xbmcvfs.File(song['path_m3u'], 'w')
-        m3u.write(lines)
-        m3u.close()
-
-
     def Tag(self, song):
         Log('def Tag ', song, xbmc.LOGDEBUG)
         try:
@@ -353,6 +321,7 @@ class Pandoki(object):
         tag['artist']              = song['artist']
         tag['album']               = song['album']
         tag['title']               = song['title']
+        Log("Save: metadata %s %s %s %s %s" % (song['brain'], song['artist'], song['album'], song['title']), song, xbmc.LOGDEBUG)
 
         if song['encoding'] == 'mp3':
             tag.save(v2_version = 3)
@@ -362,9 +331,9 @@ class Pandoki(object):
         xbmcvfs.mkdirs(song['path_dir'])
         xbmcvfs.copy(tmp, song['path_lib'])
         xbmcvfs.delete(tmp)
+        Log('Save: Song Cached ', song, xbmc.LOGDEBUG)
 
         song['saved'] = True
-        self.M3U(song)
 
         if (song.get('art', False)) and ((not xbmcvfs.exists(song['path_alb'])) or (not xbmcvfs.exists(song['path_art']))):
             try:
@@ -534,7 +503,6 @@ class Pandoki(object):
 
 
 #    def Del(self, song):
-#        self.M3U(song, True)
 #        xbmcvfs.delete(song['path_lib'])
 
 
@@ -570,7 +538,6 @@ class Pandoki(object):
 	    Prop('voted', 'down')
             self.player.playnext()
             self.pithos.add_feedback(song['token'], False)
-            self.M3U(song, True)
 
         elif (mode == 'clear'):
             song['voted'] = ''
@@ -749,7 +716,6 @@ class Pandoki(object):
         while len(self.queue) > 0:
             song = self.queue.popleft()
             self.Add(song)
-            self.M3U(song)
 
         if self.once:
             # this will start the  playlist playing
@@ -868,7 +834,7 @@ class Pandoki(object):
 
         elif act == 'dir':
             self.Dir(Prop('handle'))
-            if (self.once) and (Val('autoplay') == 'true') and (Val('station' + self.prof)):
+            if (self.once or not self.player.isPlayingAudio()) and (Val('autoplay') == 'true') and (Val('station' + self.prof)):
                 self.Play(Val('station' + self.prof))
 
         Prop('action', '')
