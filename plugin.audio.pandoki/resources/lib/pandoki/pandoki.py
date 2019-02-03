@@ -201,6 +201,8 @@ class Pandoki(object):
 #            Log(burl)
 
         xbmcplugin.endOfDirectory(int(handle), cacheToDisc = False)
+        # wait for the window to appear in Kodi before continuing
+        xbmc.sleep(3000)
         Log("Dir   OK %4s" % handle)
 
 
