@@ -529,6 +529,7 @@ class Pandoki(object):
             song['voted'] = 'up'
 	    Prop('voted', 'up')
             self.pithos.add_feedback(song['token'], True)
+            notification('Thumb UP', song['title'], '3000', iconart)
             self.Save(song)
 
         elif (mode == 'tired'):
@@ -540,12 +541,14 @@ class Pandoki(object):
 	    Prop('voted', 'down')
             self.player.playnext()
             self.pithos.add_feedback(song['token'], False)
+            notification('Thumb DOWN', song['title'], '3000', iconart)
 
         elif (mode == 'clear'):
             song['voted'] = ''
 	    Prop('voted', '')
             feedback = self.pithos.add_feedback(song['token'], True)
             self.pithos.del_feedback(song['station'], feedback)
+            notification('Thumb CLEARED', song['title'], '3000', iconart)
 
         else: return
 
@@ -564,6 +567,7 @@ class Pandoki(object):
                 self.Branch(song)
             else:
                 self.pithos.add_feedback(song['token'], True)
+                notification('Thumb UP', song['title'], '3000', iconart)
             self.Save(song)
 
         elif (rating == '4'):
@@ -571,10 +575,12 @@ class Pandoki(object):
                 self.Seed(song)
             else:
                 self.pithos.add_feedback(song['token'], True)
+                notification('Thumb UP', song['title'], '3000', iconart)
             self.Save(song)
 
         elif (rating == '3'):
             self.pithos.add_feedback(song['token'], True)
+            notification('Thumb UP', song['title'], '3000', iconart)
             self.Save(song)
 
         elif (rating == '2'):
@@ -582,15 +588,18 @@ class Pandoki(object):
                 self.pithos.set_tired(song['token'])
             else:
                 self.pithos.add_feedback(song['token'], False)
+                notification('Thumb DOWN', song['title'], '3000', iconart)
             self.player.playnext()
 
         elif (rating == '1'):
             self.pithos.add_feedback(song['token'], False)
+                notification('Thumb DOWN', song['title'], '3000', iconart)
             self.player.playnext()
 
         elif (rating == ''):
             feedback = self.pithos.add_feedback(song['token'], True)
             self.pithos.del_feedback(song['station'], feedback)
+            notification('Thumb CLEARED', song['title'], '3000', iconart)
 
 
     def Scan(self, rate = False):
