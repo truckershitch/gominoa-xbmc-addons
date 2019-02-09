@@ -593,7 +593,7 @@ class Pandoki(object):
 
         elif (rating == '1'):
             self.pithos.add_feedback(song['token'], False)
-                notification('Thumb DOWN', song['title'], '3000', iconart)
+            notification('Thumb DOWN', song['title'], '3000', iconart)
             self.player.playnext()
 
         elif (rating == ''):
