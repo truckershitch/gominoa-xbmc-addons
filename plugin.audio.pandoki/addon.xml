@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.audio.pandoki"
 	name="Pandoki"
-	version="0.9.3b"
+	version="0.9.4"
 	provider-name="gominoa, rocky4546">
 	<requires>
-		<import addon="xbmc.python" version="2.1.0"/>
-		<import addon="script.module.mutagen" version="1.22.0"/>
+		<import addon="xbmc.python" version="2.25.0"/>
 	</requires>
 	<extension point="xbmc.python.pluginsource" library="default.py">
 		<provides>audio</provides>
@@ -17,9 +16,9 @@
 		<language></language>
 		<platform>all</platform>
 		<license>GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007</license>
-		<forum>http://forum.xbmc.org/showthread.php?tid=205547</forum>
+		<forum>https://forum.xbmc.org/showthread.php?tid=205547</forum>
 		<website></website>
 		<email></email>
-		<source>https://github.com/rocky4546/gominoa-xbmc-addons</source>
+		<source>https://github.com/rocky4546/gominoa-xbmc-addons/Kodi18.0</source>
 	</extension>
 </addon>
