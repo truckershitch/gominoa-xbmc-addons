@@ -133,7 +133,7 @@ class Pandoki(object):
         return True
 
 
-    def Login(self, None, xbmc.LOGINFO):
+    def Login(self):
         Log('def Login ', None, xbmc.LOGDEBUG)
         if (Val('sni') == 'true') and (not _urllib3):
             if xbmcgui.Dialog().yesno(Val('name'), 'SNI Support not found', 'Please install: pyOpenSSL/ndg-httpsclient/pyasn1', 'Check Settings?'):
@@ -871,7 +871,7 @@ class Pandoki(object):
         for file in list:
             if reg.match(file):
                 xbmcvfs.delete("%s/%s" % (cch, file))
-                Log("Flush OK      '%s'" % file None, xbmc.LOGINFO)
+                Log("Flush OK      '%s'" % file, None, xbmc.LOGINFO)
 
 
     def Loop(self):
