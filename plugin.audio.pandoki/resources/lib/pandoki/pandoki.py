@@ -16,7 +16,15 @@ _addon	= xbmcaddon.Addon()
 _base	= sys.argv[0]
 _id	= _addon.getAddonInfo('id')
 _stamp	= str(time.time())
-
+ 
+# xbmc.LOGDEBUG = 0
+# xbmc.LOGERROR = 4
+# xbmc.LOGFATAL = 6
+# xbmc.LOGINFO = 1
+# xbmc.LOGNONE = 7
+# xbmc.LOGNOTICE = 2
+# xbmc.LOGSEVERE = 5
+# xbmc.LOGWARNING = 3
 
 def Log(msg, s = None, level = xbmc.LOGNOTICE):
     if s and s.get('artist'): xbmc.log("%s %s %s '%s - %s'" % (_id, msg, s['token'][-4:], s['artist'], s['title']), level) # song
@@ -121,7 +129,7 @@ class Pandoki(object):
             return False
 
         self.wait['auth'] = time.time() + (60 * 60)	# Auth every hour
-        Log('Auth  OK')
+        Log('Auth  OK', None, xbmc.LOGINFO)
         return True
 
 
@@ -203,7 +211,7 @@ class Pandoki(object):
         xbmcplugin.endOfDirectory(int(handle), cacheToDisc = False)
         # wait for the window to appear in Kodi before continuing
         xbmc.sleep(3000)
-        Log("Dir   OK %4s" % handle)
+        Log("Dir   OK %4s" % handle, None, xbmc.LOGINFO)
 
 
     def Search(self, handle, query):
@@ -218,7 +226,7 @@ class Pandoki(object):
             xbmcplugin.addDirectoryItem(int(handle), "%s?create=%s" % (_base, s['token']), li)
 
         xbmcplugin.endOfDirectory(int(handle), cacheToDisc = False)
-        Log("Search   %4s '%s'" % (handle, query))
+        Log("Search   %4s '%s'" % (handle, query), None, xbmc.LOGINFO)
 
 
     def Info(self, s):
@@ -248,7 +256,7 @@ class Pandoki(object):
         self.playlist.add(song['path'], li)
         self.Scan(False)
 
-        Log('Add   OK', song)
+        Log('Add   OK', song, xbmc.LOGINFO)
 
     
     def Queue(self, song):
@@ -294,7 +302,7 @@ class Pandoki(object):
         except:
             song['score']  = '0'
 
-        Log("Tag%4s%%" % song['score'], song)
+        Log("Tag%4s%%" % song['score'], song, xbmc.LOGINFO)
         return song['score'] == '100'
 
 
@@ -342,7 +350,7 @@ class Pandoki(object):
                 strm = self.Proxy().open(song['art'])
                 data = strm.read()
             except ValueError:
-                Log("Save ART      '%s'" % song['art'])
+                Log("Save ART      '%s'" % song['art'], None, xbmc.LOGINFO)
 #                xbmc.log(str(song))
                 return
 
@@ -352,18 +360,18 @@ class Pandoki(object):
                     file.write(data)
                     file.close()
 
-        Log('Save  OK', song, xbmc.LOGNOTICE)
+        Log('Save  OK', song, xbmc.LOGINFO)
 
 
     def Hook(self, song, size, totl):
         Log('def Hook ', song, xbmc.LOGDEBUG)
         if totl in (341980, 340554, 173310):	# empty song cause requesting to fast
             self.Msg('Too Many Songs Requested')
-            Log('Cache MT', song)
+            Log('Cache MT', song, xbmc.LOGINFO)
             return False
 
         if (song['title'] != 'Advertisement') and (totl <= int(Val('adsize')) * 1024):
-            Log('Cache AD', song)
+            Log('Cache AD', song, xbmc.LOGINFO)
 
             song['artist'] = Val('name')
             song['album']  = Val('description')
@@ -389,7 +397,7 @@ class Pandoki(object):
         except: # HTTPError:
             self.wait['auth'] = 0
             if not self.Auth():
-                Log("Cache ER", song)
+                Log("Cache ER", song, xbmc.LOGINFO)
                 return
             strm = self.Proxy().open(song['url'], timeout = 10)
 
@@ -397,7 +405,7 @@ class Pandoki(object):
         size = 0
         lastsize = -1
 
-        Log("Expecting %8d bytes " % totl, song)
+        Log("Expecting %8d bytes " % totl, song, xbmc.LOGINFO)
 
         cont = self.Hook(song, size, totl)
         if not cont: return
@@ -441,39 +449,39 @@ class Pandoki(object):
         if (not cont) or (size != totl):
             #xbmc.sleep(3000)
             xbmcvfs.delete(song['path_cch'])
-            Log('Cache RM', song)
+            Log('Cache RM', song, xbmc.LOGINFO)
 
         else:
             song['cached'] = True
             self.Save(song)
 
-        Log('Cache Download Complete, Still Downloading:%d' % self.downloading, song)
+        Log('Cache Download Complete, Still Downloading:%d' % self.downloading, song, xbmc.LOGINFO)
 
 
     def Fetch(self, song):
         Log('def Fetch ', song, xbmc.LOGDEBUG)
         if xbmcvfs.exists(song['path_mp3']):	# Found MP3 in Library
-            Log('Song MP3', song)
+            Log('Song MP3', song, xbmc.LOGINFO)
             song['path_lib'] = song['path_mp3']
             song['path'] = song['path_lib']
             song['saved'] = True
 
         elif xbmcvfs.exists(song['path_m4a']):	# Found M4A in Library
-            Log('Song M4A', song)
+            Log('Song M4A', song, xbmc.LOGINFO)
             song['path_lib'] = song['path_m4a']
             song['path'] = song['path_lib']
             song['saved'] = True
 
         elif xbmcvfs.exists(song['path_cch']):	# Found in Cache
-            Log('Song CCH', song)
+            Log('Song CCH', song, xbmc.LOGINFO)
             song['path'] = song['path_cch']
 
         elif Val('mode') == '0':		# Stream Only
-            Log('Song PAN', song)
+            Log('Song PAN', song, xbmc.LOGINFO)
             song['path'] = song['url']
 
         else:					# Cache / Save
-            Log('Song GET', song)
+            Log('Song GET', song, xbmc.LOGINFO)
             song['path'] = song['path_cch']
             self.Cache(song)
             return
@@ -501,7 +509,7 @@ class Pandoki(object):
         Prop('play', station['token'])
         Prop('action', 'play')
 
-        Log('Branch  ', song)
+        Log('Branch  ', song, xbmc.LOGINFO)
 
 
 #    def Del(self, song):
@@ -626,7 +634,7 @@ class Pandoki(object):
         for s in self.songs:
             if (not self.songs[s].get('keep', False)) and xbmcvfs.exists(self.songs[s].get('path_cch')):
                 xbmcvfs.delete(self.songs[s]['path_cch'])
-                Log('Scan  RM', self.songs[s])
+                Log('Scan  RM', self.songs[s], xbmc.LOGINFO)
 
         self.songs = songs
 
@@ -676,7 +684,7 @@ class Pandoki(object):
 
         self.ahead[token] = collections.deque(songs)
 
-        Log('Fill  OK', self.station)
+        Log('Fill  OK', self.station, xbmc.LOGINFO)
 
 
     def Next(self):
@@ -737,6 +745,7 @@ class Pandoki(object):
         max = int(Val('history'))
         while (self.playlist.size() > max) and (self.playlist.getposition() > 0):
             xbmc.executeJSONRPC('{"jsonrpc":"2.0", "id":1, "method":"Playlist.Remove", "params":{"playlistid":' + str(xbmc.PLAYLIST_MUSIC) + ', "position":0}}')
+            xbmc.sleep(100)
 
         if xbmcgui.getCurrentWindowId() == 10500:
             xbmc.executebuiltin("Container.Refresh")
@@ -756,7 +765,7 @@ class Pandoki(object):
 
 
     def Play(self, token):
-        Log('Play  ??', self.station, xbmc.LOGNOTICE)
+        Log('Play  ??', self.station, xbmc.LOGINFO)
         last = self.station
 
         if self.Tune(token):
@@ -777,18 +786,18 @@ class Pandoki(object):
                 else: break
 
             self.Msg("%s" % self.station['title'])
-            Log('Play  OK', self.station, xbmc.LOGNOTICE)
+            Log('Play  OK', self.station, xbmc.LOGINFO)
 
         xbmc.executebuiltin('ActivateWindow(10500)')
 
 
     def Create(self, token):
-        Log('%s' % token)
+        Log('%s' % token, None, xbmc.LOGINFO)
         self.Stations()
 #        self.Auth()
         station = self.pithos.create_station(token)
 
-        Log('Create  ', station)
+        Log('Create  ', station, xbmc.LOGINFO)
         self.Play(station['token'])
 
 
@@ -806,7 +815,7 @@ class Pandoki(object):
         self.Stations()
         station = self.pithos.rename_station(token, title)
 
-        Log('Rename  ', station)
+        Log('Rename  ', station, xbmc.LOGINFO)
         xbmc.executebuiltin("Container.Refresh")
 
 
@@ -862,7 +871,7 @@ class Pandoki(object):
         for file in list:
             if reg.match(file):
                 xbmcvfs.delete("%s/%s" % (cch, file))
-                Log("Flush OK      '%s'" % file)
+                Log("Flush OK      '%s'" % file, None, xbmc.LOGINFO)
 
 
     def Loop(self):
