@@ -16,7 +16,7 @@ _addon	= xbmcaddon.Addon()
 _base	= sys.argv[0]
 _id	= _addon.getAddonInfo('id')
 _stamp	= str(time.time())
-
+ 
 # xbmc.LOGDEBUG = 0
 # xbmc.LOGERROR = 4
 # xbmc.LOGFATAL = 6
