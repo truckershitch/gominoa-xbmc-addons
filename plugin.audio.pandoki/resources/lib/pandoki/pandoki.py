@@ -765,7 +765,7 @@ class Pandoki(object):
 
 
     def Play(self, token):
-        Log('Play  ??', self.station, xbmc.LOGNOTICE)
+        Log('Play  ??', self.station, xbmc.LOGINFO)
         last = self.station
 
         if self.Tune(token):
@@ -786,7 +786,7 @@ class Pandoki(object):
                 else: break
 
             self.Msg("%s" % self.station['title'])
-            Log('Play  OK', self.station, xbmc.LOGNOTICE)
+            Log('Play  OK', self.station, xbmc.LOGINFO)
 
         xbmc.executebuiltin('ActivateWindow(10500)')
 
