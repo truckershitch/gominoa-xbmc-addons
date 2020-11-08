@@ -1,11 +1,13 @@
-import os, sys, time, urlparse
-import xbmc, xbmcaddon, xbmcgui
+# Pandoki - Kodi Pandora client
+import os, sys, time
+import xbmc, xbmcaddon, xbmcgui, xbmcvfs
+from urllib import parse as urlparse
 
-path = xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('path').decode('utf-8'))
-path = xbmc.translatePath(os.path.join(path, 'resources', 'lib'))
+path = xbmcvfs.translatePath(xbmcaddon.Addon().getAddonInfo('path'))
+path = xbmcvfs.translatePath(os.path.join(path, 'resources', 'lib'))
 sys.path.append(path)
 
-from pandoki import *
+from resources.lib.pandoki import *
 
 def Wait(key, value):
     Prop(key, value)
@@ -60,7 +62,7 @@ elif delete and xbmcgui.Dialog().yesno('%s - Delete Station' % Val('name'), 'Are
 elif thumb:
     img = xbmcgui.Dialog().browseSingle(2, 'Select Thumb', 'files', useThumbs = True)
     Val("art-%s" % thumb, img)
-    xbmc.executebuiltin("Container.Refresh")            
+    xbmc.executebuiltin("Container.Refresh")
 
 elif rate:
     Prop('rate',    rate)
@@ -75,4 +77,3 @@ else:
     Wait('action', 'dir')
 
 if run:    run.Loop()
-

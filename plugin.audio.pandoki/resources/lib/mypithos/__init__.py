@@ -1,1 +1,1 @@
-from pithos import *
+from .pithos import *

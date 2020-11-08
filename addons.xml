@@ -1,5 +1,33 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
+<addon id="plugin.audio.pandoki"
+	name="Pandoki"
+	version="0.10.0"
+	provider-name="gominoa, rocky4546, truckershitch">
+	<requires>
+		<import addon="xbmc.python" version="3.0.0"/>
+	</requires>
+	<extension point="xbmc.python.pluginsource" library="default.py">
+		<provides>audio</provides>
+	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary lang="en">Pandora Internet Radio</summary>
+		<description lang="en">Pandora Internet Radio</description>
+		<disclaimer lang="en">Ain't my fault</disclaimer>
+		<language></language>
+		<platform>all</platform>
+		<license>GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007</license>
+		<forum>https://forum.xbmc.org/showthread.php?tid=205547</forum>
+		<website></website>
+		<email></email>
+		<source>https://github.com/truckershitch/gominoa-xbmc-addons/tree/master/plugin.audio.pandoki</source>
+		<assets>
+			<icon>icon.png</icon>
+			<fanart>fanart.jpg</fanart>
+		</assets>
+	</extension>
+</addon>
+
 <addon id="plugin.audio.pandoraslim"
     name="Pandora Slim"
     version="0.4.2"
@@ -34,30 +62,6 @@
 		<summary lang="en">Install gominoa's, rocky4546 Addons</summary>
 		<description lang="en">Download and install addons by gominoa, rocky4546</description>
 		<platform>all</platform>
-	</extension>
-</addon>
-
-<addon id="plugin.audio.pandoki"
-	name="Pandoki"
-	version="0.9.4a"
-	provider-name="gominoa, rocky4546">
-	<requires>
-		<import addon="xbmc.python" version="2.25.0"/>
-	</requires>
-	<extension point="xbmc.python.pluginsource" library="default.py">
-		<provides>audio</provides>
-	</extension>
-	<extension point="xbmc.addon.metadata">
-		<summary lang="en">Pandora Internet Radio</summary>
-		<description lang="en">Pandora Internet Radio</description>
-		<disclaimer lang="en">Ain't my fault</disclaimer>
-		<language></language>
-		<platform>all</platform>
-		<license>GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007</license>
-		<forum>https://forum.xbmc.org/showthread.php?tid=205547</forum>
-		<website></website>
-		<email></email>
-		<source>https://github.com/rocky4546/gominoa-xbmc-addons/Kodi18.0</source>
 	</extension>
 </addon>
 

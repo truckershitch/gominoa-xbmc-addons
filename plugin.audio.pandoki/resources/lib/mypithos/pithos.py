@@ -15,16 +15,19 @@
 #with this program.  If not, see <http://www.gnu.org/licenses/>.
 ### END LICENSE
 
-from blowfish import Blowfish
+from .blowfish import Blowfish
 from xml.dom import minidom
 import re
 import json
 import logging
 import time
-import urllib
-import urllib2
+import urllib.parse
+import urllib.request
+import urllib.error
+import codecs
 #import ssl
 
+import xbmc # for extra logging -- may remove later
 
 # uncomment to write a pithos.log file
 #logging.basicConfig(filename='~/.kodi/temp/pithos.log',level=logging.DEBUG)
@@ -83,40 +86,56 @@ _client = {
 }
 
 
-def pad(s, l):
-    return s + "\0" * (l - len(s))
-
+def xbmc_log(msg, level):
+    prefix = '[Pandoki::pithos] '
+    return xbmc.log(msg=prefix + msg, level=level)
 
 class Pithos(object):
     def __init__(self):
-        self.opener = urllib2.build_opener()
+        self.opener = urllib.request.build_opener()
         self.stations = []
         self.sni = False
-        pass
+
+
+    def pad(self, s, l):
+        return s + '\0' * (l - len(s))
 
 
     def pandora_encrypt(self, s):
-        return "".join([self.blowfish_encode.encrypt(pad(s[i:i+8], 8)).encode('hex') for i in xrange(0, len(s), 8)])
+        def encode_hex(plain):
+            return codecs.encode(plain.encode('latin-1'), 'hex').decode()
+
+        xbmc_log(msg='type(s): %s pandora_encrypt s: %s' % (type(s), s), level=xbmc.LOGDEBUG)
+        return "".join([encode_hex(self.blowfish_encode.encrypt(self.pad(s[i:i+8], 8))) for i in range(0, len(s), 8)])
 
 
     def pandora_decrypt(self, s):
-        return "".join([self.blowfish_decode.decrypt(pad(s[i:i+16].decode('hex'), 8)) for i in xrange(0, len(s), 16)]).rstrip('\x08')
+        def decode_hex(h):
+            return "".join([chr(int(h[i:i+2], 16)) for i in range(0, len(h), 2)])
+
+        xbmc_log(msg='type(s): %s pandora_decrypt s: %s' % (type(s), s), level=xbmc.LOGDEBUG)
+        return "".join([self.blowfish_decode.decrypt(self.pad(decode_hex(s[i:i+16]), 8)) for i in range(0, len(s), 16)]).rstrip('\x08')
 
 
     def json_call(self, method, args={}, https=False, blowfish=True):
+        # HEADERS = {'User-agent': USER_AGENT, 'Content-type': 'text/plain; charset=utf-8'}
+        HEADERS = {'User-agent': USER_AGENT, 'Content-type': 'text/plain'}
+
         url_arg_strings = []
         if self.partnerId:
             url_arg_strings.append('partner_id=%s'%self.partnerId)
         if self.userId:
             url_arg_strings.append('user_id=%s'%self.userId)
         if self.userAuthToken:
-            url_arg_strings.append('auth_token=%s'%urllib.quote_plus(self.userAuthToken))
+            url_arg_strings.append('auth_token=%s'%urllib.parse.quote_plus(self.userAuthToken))
         elif self.partnerAuthToken:
-            url_arg_strings.append('auth_token=%s'%urllib.quote_plus(self.partnerAuthToken))
+            url_arg_strings.append('auth_token=%s'%urllib.parse.quote_plus(self.partnerAuthToken))
 
         url_arg_strings.append('method=%s'%method)
         protocol = 'https' if https else 'http'
         url = protocol + self.rpcUrl + '&'.join(url_arg_strings)
+
+        xbmc_log(msg='url: %s' % url, level=xbmc.LOGDEBUG)
 
         if self.time_offset:
             args['syncTime'] = int(time.time()+self.time_offset)
@@ -124,35 +143,46 @@ class Pithos(object):
             args['userAuthToken'] = self.userAuthToken
         elif self.partnerAuthToken:
             args['partnerAuthToken'] = self.partnerAuthToken
-        data = json.dumps(args)
 
-        logging.debug(url)
-        logging.debug(data)
+        data = json.dumps(args)
 
         if blowfish:
             data = self.pandora_encrypt(data)
 
+        if not self.sni:
+            data = data.encode()
+
+        logging.debug(url)
+        logging.debug(data)
+
         if self.sni:
             try:
-                response = self.opener.urlopen('POST', url, headers={'User-agent': USER_AGENT, 'Content-type': 'text/plain'}, body=data)
+                xbmc_log(msg='urllib3: SNI POST data: %s\ttype: %s' % (data, type(data)), level=xbmc.LOGDEBUG)
+                response = self.opener.open('POST', url, headers=HEADERS, body=data)
                 text = response.data
-            except:
-                logging.error("urllib3 error")
-                raise PithosNetError('urllib3 error')
+                xbmc_log(msg='urllib3: SNI response: %s' % text, level=xbmc.LOGDEBUG)
+            except Exception as e:
+                logging.error("urllib3 Error: %s" % e)
+                xbmc_log(msg='urllib3 Error: %s' % e, level=xbmc.LOGERROR)
+                raise PithosNetError('urllib3 error: %s' % e)
         else:
             try:
-                req = urllib2.Request(url, data, {'User-agent': USER_AGENT, 'Content-type': 'text/plain'})
+                xbmc_log(msg='urllib: POST data: %s\ttype: %s' % (data, type(data)), level=xbmc.LOGDEBUG)
+                req = urllib.request.Request(url=url, data=data, headers=HEADERS)
                 response = self.opener.open(req, timeout=HTTP_TIMEOUT)
-                text = response.read()
-            except urllib2.HTTPError as e:
-                logging.error("HTTP error: %s", e)
+                text = response.read().decode()
+                xbmc_log(msg='urllib: response: %s' % text, level=xbmc.LOGDEBUG)
+            except urllib.error.HTTPError as e:
+                logging.error('urllib HTTP error: %s', e)
+                xbmc_log(msg='urllib HTTP error: %s' % e, level=xbmc.LOGERROR)
                 raise PithosNetError(str(e))
-            except urllib2.URLError as e:
-                logging.error("Network error: %s", e)
+            except urllib.error.URLError as e:
+                logging.error('urllib Network error: %s', e)
+                xbmc_log(msg='urllib Network error: %s' % e, level=xbmc.LOGERROR)
                 if e.reason[0] == 'timed out':
-                    raise PithosTimeout("Network error", submsg="Timeout")
+                    raise PithosTimeout('Network error', submsg='Timeout')
                 else:
-                    raise PithosNetError("Network error", submsg=e.reason.strerror)
+                    raise PithosNetError('Network error', submsg=e.reason.strerror)
 
         logging.debug(text)
 
@@ -220,9 +250,11 @@ class Pithos(object):
 
         pandora_time = int(self.pandora_decrypt(partner['syncTime'])[4:14])
         self.time_offset = pandora_time - time.time()
+        xbmc_log(msg='pandora_time: %s\ttime.time(): %s' % (pandora_time, time.time()), level=xbmc.LOGDEBUG)
+        xbmc_log(msg='Time offset is %s' % self.time_offset, level=xbmc.LOGDEBUG)
         logging.info("Time offset is %s", self.time_offset)
 
-        user = self.json_call('auth.userLogin', {'username': user, 'password': password, 'loginType': 'user'}, https = True)
+        user = self.json_call('auth.userLogin', {'username': user, 'password': password, 'loginType': 'user'}, https=True)
         self.userId = user['userId']
         self.userAuthToken = user['userAuthToken']
 
@@ -240,9 +272,9 @@ class Pithos(object):
         quality = [ 'lowQuality', 'mediumQuality', 'highQuality' ]
         self.playlist = []
 
-        for s in self.json_call('station.getPlaylist', { 
-                     'stationToken': token, 
-                     'includeTrackLength' : True, 
+        for s in self.json_call('station.getPlaylist', {
+                     'stationToken': token,
+                     'includeTrackLength' : True,
                      'additionalAudioUrl': 'HTTP_32_AACPLUS,HTTP_128_MP3'
                       }, https = True)['items']:
             if s.get('adToken'): continue
@@ -253,7 +285,7 @@ class Pithos(object):
 
             logging.info('get_playlist JSON: %s' % s)
             logging.debug("####### audioUrlMap=%s additionalAudioUrl=%s" % (s['audioUrlMap'], s.get('additionalAudioUrl')))
-            
+
             while q < 3:
                 if s['audioUrlMap'].get(quality[q]):
                     song['url']      =     s['audioUrlMap'][quality[q]]['audioUrl']
@@ -274,10 +306,10 @@ class Pithos(object):
                 song['rating'] = '3'
                 song['voted'] = 'up'
 
-            #if song['encoding'] == 'aacplus': 
+            #if song['encoding'] == 'aacplus':
             #   song['encoding'] = 'm4a'
             #   song['bitrate']  = 64
-            #if song['encoding'] == 'mp3-hifi': 
+            #if song['encoding'] == 'mp3-hifi':
             #   song['encoding'] = 'mp3'
             #   song['bitrate']  = 128
 
@@ -354,5 +386,3 @@ class Pithos(object):
 
                 return s
         return None
-
-
